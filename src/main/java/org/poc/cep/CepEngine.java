@@ -7,7 +7,7 @@ import java.util.Collection;
  */
 public interface CepEngine {
 
-    void addRule(String rule);
+    void addRule(String id, String rule);
 
     void startStatefulSession();
 
