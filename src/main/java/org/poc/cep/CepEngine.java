@@ -9,6 +9,8 @@ public interface CepEngine {
 
     void addRule(String id, String rule);
 
+    void removeRule(String id);
+
     void addGlobal(String name, Object global);
 
     void addFact(Object fact);

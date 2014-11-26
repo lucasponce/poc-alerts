@@ -12,17 +12,18 @@ import org.poc.api.Event;
 public class AlertsServiceTest {
 
     @Test
-    public void dummyTest() throws Exception {
+    public void oneAlertTest() throws Exception {
         AlertsService alertsService = AlertsFactory.getAlertsService();
 
-        for (int i = 0; i < 3; i++) {
-            Event e = new Event("E" + i, Math.random(), System.currentTimeMillis());
-            alertsService.sendEvent(e);
-        }
+        Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
+        Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
 
-        Thread.sleep(5 * 1000);
+        alertsService.sendEvent(normalJvm);
+        alertsService.sendEvent(highJvm);
 
-        Assert.assertEquals(3, alertsService.checkState().size());
+        Thread.sleep(4000);
+
+        Assert.assertEquals(1, alertsService.checkAlert().size());
     }
 
 }

@@ -13,5 +13,7 @@ public interface AlertsService {
 
     Collection<State> checkState();
 
+    Collection<Alert> checkAlert();
+
     void finish();
 }

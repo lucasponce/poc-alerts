@@ -10,6 +10,8 @@ import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.StatelessKieSession;
 import org.kie.internal.command.CommandFactory;
 import org.poc.cep.CepEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
@@ -17,6 +19,7 @@ import java.util.Collection;
  * A proof of concept of CepEngine to test several options of interaction between high level API and drools API.
  */
 public class PocCepEngine implements CepEngine {
+    private static final Logger LOG = LoggerFactory.getLogger(PocCepEngine.class);
 
     private KieServices ks;
     private KieRepository kr;
@@ -31,16 +34,25 @@ public class PocCepEngine implements CepEngine {
         return PATH + "/" + id + ".drl";
     }
 
+    public PocCepEngine() {
+        initKieArtifacts();
+    }
+
     private void initKieArtifacts() {
         ks = KieServices.Factory.get();
         kr = ks.getRepository();
         kfs = ks.newKieFileSystem();
     }
 
-    private void initSession() {
+    private boolean initSession() {
+        if (kc == null) {
+            LOG.warn("No rules detected.");
+            return false;
+        }
         if (kSession == null) {
             kSession = kc.newKieSession();
         }
+        return true;
     }
 
     @Override
@@ -48,9 +60,9 @@ public class PocCepEngine implements CepEngine {
         if (id == null) {
             throw new IllegalArgumentException("Id must not be null");
         }
-        if (kfs == null) {
-            initKieArtifacts();
-        }
+
+        LOG.info("Adding rule " + id + " ...");
+
         String path = path(id);
         if (kfs.read(path) != null) {
             throw new IllegalArgumentException("Id argument exists on current repository");
@@ -74,22 +86,58 @@ public class PocCepEngine implements CepEngine {
     }
 
     @Override
+    public void removeRule(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Id must not be null");
+        }
+
+        LOG.info("Removing rule " + id + " ...");
+
+        String path = path(id);
+        if (kfs.read(path) == null) {
+            throw new IllegalArgumentException("Id argument does not exist on current repository");
+        }
+
+        kfs.delete(path);
+
+        kb = ks.newKieBuilder(kfs);
+
+        kb.buildAll();
+        if (kb.getResults().hasMessages(Message.Level.ERROR)) {
+            throw new RuntimeException("Build Errors:\n" + kb.getResults().toString());
+        }
+
+        kc = ks.newKieContainer(kr.getDefaultReleaseId());
+
+        if (kSession != null) {
+            kSession.dispose();
+            kSession = null;
+        }
+    }
+
+    @Override
     public void addGlobal(String name, Object global) {
-        initSession();
+        if (!initSession()) return;
+
+        LOG.info("Adding global " + name + " - " + global + " ...");
 
         kSession.setGlobal(name, global);
     }
 
     @Override
     public void addFact(Object fact) {
-        initSession();
+        if (!initSession()) return;
+
+        LOG.info("Adding fact " + fact + " ...");
 
         kSession.insert(fact);
     }
 
     @Override
     public void fire() {
-        initSession();
+        if (!initSession()) return;
+
+        LOG.info("Firing rules ... ");
 
         kSession.fireAllRules();
     }

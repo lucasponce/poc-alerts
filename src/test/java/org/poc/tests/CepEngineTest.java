@@ -15,9 +15,7 @@ public class CepEngineTest {
 
         String dummyRule = "" +
                 "package org.poc.rules \n\n" +
-                "import org.poc.api.Alert\n" +
                 "import org.poc.api.Event\n" +
-                "import org.poc.api.State\n\n" +
                 "global java.io.PrintStream out \n\n" +
                 "rule \"Dummy\" \n" +
                 "when \n" +
@@ -34,5 +32,7 @@ public class CepEngineTest {
 
         cepEngine.addFact( new Event("2", 0d, System.currentTimeMillis()) );
         cepEngine.fire();
+
+        cepEngine.removeRule("dummy");
     }
 }

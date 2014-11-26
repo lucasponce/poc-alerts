@@ -14,8 +14,8 @@ public class AlertsFactory {
 
     public static AlertsService getAlertsService() {
         if (alertsService == null) {
-            LOG.info("AlertsService created.");
             alertsService = new PocAlertsService();
+            LOG.info("AlertsService created.");
         }
         return alertsService;
     }
