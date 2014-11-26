@@ -12,4 +12,6 @@ public interface AlertsService {
     void sendBatch(Collection<Event> events);
 
     Collection<State> checkState();
+
+    void finish();
 }
