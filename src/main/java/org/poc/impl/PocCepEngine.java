@@ -7,6 +7,8 @@ import org.kie.api.builder.KieRepository;
 import org.kie.api.builder.Message;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.StatelessKieSession;
+import org.kie.internal.command.CommandFactory;
 import org.poc.cep.CepEngine;
 
 import java.util.Collection;
@@ -25,7 +27,7 @@ public class PocCepEngine implements CepEngine {
 
     private static final String PATH = "src/main/resources/org/poc/rules";
 
-    private String getPath(String id) {
+    private String path(String id) {
         return PATH + "/" + id + ".drl";
     }
 
@@ -33,6 +35,12 @@ public class PocCepEngine implements CepEngine {
         ks = KieServices.Factory.get();
         kr = ks.getRepository();
         kfs = ks.newKieFileSystem();
+    }
+
+    private void initSession() {
+        if (kSession == null) {
+            kSession = kc.newKieSession();
+        }
     }
 
     @Override
@@ -43,7 +51,7 @@ public class PocCepEngine implements CepEngine {
         if (kfs == null) {
             initKieArtifacts();
         }
-        String path = getPath(id);
+        String path = path(id);
         if (kfs.read(path) != null) {
             throw new IllegalArgumentException("Id argument exists on current repository");
         }
@@ -58,30 +66,31 @@ public class PocCepEngine implements CepEngine {
         }
 
         kc = ks.newKieContainer(kr.getDefaultReleaseId());
+
+        if (kSession != null) {
+            kSession.dispose();
+            kSession = null;
+        }
     }
 
     @Override
-    public void startStatefulSession() {
+    public void addGlobal(String name, Object global) {
+        initSession();
 
-    }
-
-    @Override
-    public void startStatelessSession() {
-
+        kSession.setGlobal(name, global);
     }
 
     @Override
     public void addFact(Object fact) {
+        initSession();
 
-    }
-
-    @Override
-    public void addFact(Collection<Object> facts) {
-
+        kSession.insert(fact);
     }
 
     @Override
     public void fire() {
+        initSession();
 
+        kSession.fireAllRules();
     }
 }

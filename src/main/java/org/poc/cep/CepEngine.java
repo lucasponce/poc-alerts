@@ -9,13 +9,9 @@ public interface CepEngine {
 
     void addRule(String id, String rule);
 
-    void startStatefulSession();
-
-    void startStatelessSession();
+    void addGlobal(String name, Object global);
 
     void addFact(Object fact);
-
-    void addFact(Collection<Object> facts);
 
     void fire();
 
