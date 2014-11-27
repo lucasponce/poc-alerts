@@ -61,6 +61,7 @@ public class PocNotificationsService implements NotificationsService {
 
     @Override
     public void finish() {
+        wakeUpTimer.cancel();
     }
 
     /**
