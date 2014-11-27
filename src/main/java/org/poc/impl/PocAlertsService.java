@@ -28,10 +28,14 @@ public class PocAlertsService implements AlertsService {
 
     private final RulesStoreService rulesStoreService;
 
+    private final NotificationsService notificationsService;
+
     public PocAlertsService() {
         lEvents = new CopyOnWriteArrayList<>();
         lStates = new CopyOnWriteArrayList<>();
         lAlerts = new CopyOnWriteArrayList<>();
+
+        notificationsService = NotificationsFactory.getNotificationsService();
 
         cepEngine = CepEngineFactory.getCepEngine();
 
@@ -44,6 +48,7 @@ public class PocAlertsService implements AlertsService {
 
         cepEngine.addGlobal("lStates", lStates);
         cepEngine.addGlobal("lAlerts", lAlerts);
+        cepEngine.addGlobal("notificationsService", notificationsService);
 
         wakeUpTimer = new Timer("PocAlertsService-Timer");
         wakeUpTimer.schedule(new CepInvoker(), DELAY, PERIOD);
@@ -70,8 +75,14 @@ public class PocAlertsService implements AlertsService {
     }
 
     @Override
+    public void register(NotificationTask notification) {
+        notificationsService.register(notification);
+    }
+
+    @Override
     public void finish() {
         wakeUpTimer.cancel();
+        notificationsService.finish();
     }
 
     /**
@@ -97,10 +108,12 @@ public class PocAlertsService implements AlertsService {
                 cepEngine.addFact(e);
             }
 
-            try {
-                cepEngine.fire();
-            } catch (Exception e) {
-                LOG.error("Error on CEP processing ", e);
+            if (newElements > 0) {
+                try {
+                    cepEngine.fire();
+                } catch (Exception e) {
+                    LOG.error("Error on CEP processing ", e);
+                }
             }
 
             lastIndex = lEvents.size();

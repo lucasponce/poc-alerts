@@ -57,7 +57,8 @@ public class PocRulesStoreService implements RulesStoreService {
                                               "import org.poc.api.Event" + NL +
                                               "import org.poc.api.State" + NL + NL;
         static final String GLOBALS         = "global java.util.List lStates" + NL +
-                                              "global java.util.List lAlerts" + NL + NL;
+                                              "global java.util.List lAlerts" + NL +
+                                              "global org.poc.api.NotificationsService notificationsService" + NL + NL;
 
         static final String RULE_JVM_MEM    = PKG + IMPORTS + GLOBALS +
                                                 "rule \"High JVM\"" + NL +
@@ -66,6 +67,7 @@ public class PocRulesStoreService implements RulesStoreService {
                                                 "then" + NL +
                                                 "Alert alert = new Alert(\"JVM\", \"Mem value = \" + $value);" + NL +
                                                 "lAlerts.add(alert);" + NL +
+                                                "notificationsService.notify(\"SNMP-Trap-JVM\");" + NL +
                                                 "insert(alert);" + NL +
                                                 "end";
 
@@ -76,6 +78,7 @@ public class PocRulesStoreService implements RulesStoreService {
                                                 "then" + NL +
                                                 "Alert alert = new Alert(\"CPU\", \"CPU value = \" + $value);" + NL +
                                                 "lAlerts.add(alert);" + NL +
+                                                "notificationsService.notify(\"SNMP-Trap-CPU\");" + NL +
                                                 "insert(alert);" + NL +
                                                 "end";
 
@@ -87,6 +90,7 @@ public class PocRulesStoreService implements RulesStoreService {
                                                 "then" + NL +
                                                 "State state = new State(\"Bad State\", \"CPU  and JVM metrics under high load\");" + NL +
                                                 "lStates.add(state);" + NL +
+                                                "notificationsService.notify(\"admin@email.com\");" + NL +
                                                 "insert(state);" + NL +
                                                 "end";
     }
