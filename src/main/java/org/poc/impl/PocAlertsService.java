@@ -23,11 +23,11 @@ public class PocAlertsService implements AlertsService {
     public static final int PERIOD = 2000;
 
     private final Timer wakeUpTimer;
+    private TimerTask cepTask;
 
     private final CepEngine cepEngine;
 
     private final RulesStoreService rulesStoreService;
-
     private final NotificationsService notificationsService;
 
     public PocAlertsService() {
@@ -51,7 +51,9 @@ public class PocAlertsService implements AlertsService {
         cepEngine.addGlobal("notificationsService", notificationsService);
 
         wakeUpTimer = new Timer("PocAlertsService-Timer");
-        wakeUpTimer.schedule(new CepInvoker(), DELAY, PERIOD);
+
+        cepTask = new CepInvoker();
+        wakeUpTimer.schedule(cepTask, DELAY, PERIOD);
     }
 
     @Override
@@ -81,8 +83,33 @@ public class PocAlertsService implements AlertsService {
 
     @Override
     public void finish() {
-        wakeUpTimer.cancel();
         notificationsService.finish();
+        cepTask.cancel();
+    }
+
+    @Override
+    public void reset() {
+        cepEngine.reset();
+
+        lEvents.clear();
+        lAlerts.clear();
+        lStates.clear();
+
+        Map<String, String> initRules = rulesStoreService.getAllRules();
+
+        for (String name : initRules.keySet()) {
+            cepEngine.addRule(name, initRules.get(name));
+        }
+
+        cepEngine.addGlobal("lStates", lStates);
+        cepEngine.addGlobal("lAlerts", lAlerts);
+        cepEngine.addGlobal("notificationsService", notificationsService);
+
+        cepTask.cancel();
+        cepTask = new CepInvoker();
+        wakeUpTimer.schedule(cepTask, DELAY, PERIOD);
+
+        notificationsService.reset();
     }
 
     /**
@@ -100,7 +127,7 @@ public class PocAlertsService implements AlertsService {
         public void run() {
             int newElements = lEvents.size() - lastIndex;
 
-            LOG.info("New events: " + newElements);
+            LOG.info("New events: " + newElements + " " + Thread.currentThread());
 
             for ( int i = lastIndex; i < lEvents.size(); i++ ) {
                 Event e = lEvents.get(i);
@@ -118,6 +145,5 @@ public class PocAlertsService implements AlertsService {
 
             lastIndex = lEvents.size();
         }
-
     }
 }

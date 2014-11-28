@@ -11,4 +11,6 @@ public interface NotificationsService {
     void notify(String id);
 
     void finish();
+
+    void reset();
 }

@@ -21,6 +21,46 @@ public class AlertsServiceTest {
     @Test
     public void twoAlertTest() throws Exception {
         AlertsService alertsService = AlertsFactory.getAlertsService();
+        alertsService.reset();
+
+        SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
+        SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
+        EmailNotification emailAdmin = new EmailNotification("admin@email.com");
+
+        alertsService.register(snmpTrapJvm);
+        alertsService.register(snmpTrapCpu);
+        alertsService.register(emailAdmin);
+
+        Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
+        Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
+
+        Event normalCpu = new Event("CPU", 50d, System.currentTimeMillis());
+        Event highCpu = new Event("CPU", 95d, System.currentTimeMillis());
+
+        Collection<Event> cpu = new ArrayList<>();
+        cpu.add(normalCpu);
+        cpu.add(highCpu);
+
+        alertsService.sendEvent(normalJvm);
+        alertsService.sendEvent(highJvm);
+        alertsService.sendBatch(cpu);
+
+        Thread.sleep(4000);
+
+        Assert.assertEquals(2, alertsService.checkAlert().size());
+        Assert.assertEquals(1, alertsService.checkState().size());
+
+        Assert.assertTrue(snmpTrapJvm.isNotified());
+        Assert.assertTrue(snmpTrapCpu.isNotified());
+        Assert.assertTrue(emailAdmin.isNotified());
+
+        alertsService.finish();
+    }
+
+    @Test
+    public void moreEvents() throws Exception {
+        AlertsService alertsService = AlertsFactory.getAlertsService();
+        alertsService.reset();
 
         SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
         SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");

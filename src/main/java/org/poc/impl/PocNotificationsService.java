@@ -25,13 +25,15 @@ public class PocNotificationsService implements NotificationsService {
     public static final int PERIOD = 2000;
 
     private final Timer wakeUpTimer;
+    private TimerTask notificationsTask;
 
     public PocNotificationsService() {
         notifications = new ConcurrentHashMap<String, NotificationTask>();
         pending = new ConcurrentLinkedQueue<>();
 
         wakeUpTimer = new Timer("PocNotificationsService-Timer");
-        wakeUpTimer.schedule(new NotificationsInvoker(), DELAY, PERIOD);
+        notificationsTask = new NotificationsInvoker();
+        wakeUpTimer.schedule(notificationsTask, DELAY, PERIOD);
     }
 
     @Override
@@ -61,7 +63,19 @@ public class PocNotificationsService implements NotificationsService {
 
     @Override
     public void finish() {
-        wakeUpTimer.cancel();
+        notificationsTask.cancel();
+        notifications.clear();
+        pending.clear();
+    }
+
+    @Override
+    public void reset() {
+        notificationsTask.cancel();
+        notifications.clear();
+        pending.clear();
+
+        notificationsTask = new NotificationsInvoker();
+        wakeUpTimer.schedule(notificationsTask, DELAY, PERIOD);
     }
 
     /**

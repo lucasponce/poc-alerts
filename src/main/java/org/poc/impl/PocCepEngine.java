@@ -139,6 +139,19 @@ public class PocCepEngine implements CepEngine {
 
         LOG.info("Firing rules ... ");
 
+        LOG.info("BEFORE Facts: " + kSession.getFactCount());
+
         kSession.fireAllRules();
+
+        LOG.info("AFTER Facts: " + kSession.getFactCount());
+    }
+
+    @Override
+    public void reset() {
+        kfs = ks.newKieFileSystem();
+        if (kSession != null) {
+            kSession.dispose();
+            kSession = null;
+        }
     }
 }

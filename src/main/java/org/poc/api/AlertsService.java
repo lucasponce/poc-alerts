@@ -18,4 +18,6 @@ public interface AlertsService {
     void register(NotificationTask notification);
 
     void finish();
+
+    void reset();
 }
