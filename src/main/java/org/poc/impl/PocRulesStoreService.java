@@ -47,6 +47,17 @@ public class PocRulesStoreService implements RulesStoreService {
         addRule("CheckState", DemoRules.RULE_COMBINED);
     }
 
+    @Override
+    public void clear() {
+        rulesMap.clear();
+    }
+
+    @Override
+    public void reset() {
+        clear();
+        initDemoRules();
+    }
+
     /**
      * Helper class to define programatically rules.
      * Rules can be defined statically from storages or dynamically.

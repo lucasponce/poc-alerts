@@ -15,7 +15,13 @@ public interface AlertsService {
 
     Collection<Alert> checkAlert();
 
+    /**
+     * Reloads all rules available through RulesStoreService
+     */
     void reloadRules();
 
+    /**
+     * Clear session state
+     */
     void clear();
 }

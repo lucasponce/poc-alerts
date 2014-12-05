@@ -14,4 +14,8 @@ public interface RulesStoreService {
     String getRule(String name);
 
     Map<String, String> getAllRules();
+
+    void clear();
+
+    void reset();
 }
