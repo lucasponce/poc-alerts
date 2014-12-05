@@ -15,9 +15,7 @@ public interface AlertsService {
 
     Collection<Alert> checkAlert();
 
-    void register(NotificationTask notification);
+    void reloadRules();
 
-    void finish();
-
-    void reset();
+    void clear();
 }

@@ -1,5 +1,6 @@
 package org.poc.impl;
 
+import org.poc.ServiceFactory;
 import org.poc.api.*;
 import org.poc.cep.CepEngine;
 import org.poc.cep.CepEngineFactory;
@@ -19,6 +20,8 @@ public class PocAlertsService implements AlertsService {
     private final List<State> lStates;
     private final List<Alert> lAlerts;
 
+    private final List<Event> processed;
+
     public static final int DELAY = 1000;
     public static final int PERIOD = 2000;
 
@@ -34,12 +37,13 @@ public class PocAlertsService implements AlertsService {
         lEvents = new CopyOnWriteArrayList<>();
         lStates = new CopyOnWriteArrayList<>();
         lAlerts = new CopyOnWriteArrayList<>();
+        processed = new CopyOnWriteArrayList<>();
 
-        notificationsService = NotificationsFactory.getNotificationsService();
+        notificationsService = ServiceFactory.getNotificationsService();
 
         cepEngine = CepEngineFactory.getCepEngine();
 
-        rulesStoreService = RulesStoreFactory.getRulesStoreService();
+        rulesStoreService = ServiceFactory.getRulesStoreService();
         Map<String, String> initRules = rulesStoreService.getAllRules();
 
         for (String name : initRules.keySet()) {
@@ -77,23 +81,9 @@ public class PocAlertsService implements AlertsService {
     }
 
     @Override
-    public void register(NotificationTask notification) {
-        notificationsService.register(notification);
-    }
-
-    @Override
-    public void finish() {
-        notificationsService.finish();
-        cepTask.cancel();
-    }
-
-    @Override
-    public void reset() {
+    public void reloadRules() {
         cepEngine.reset();
-
-        lEvents.clear();
-        lAlerts.clear();
-        lStates.clear();
+        cepTask.cancel();
 
         Map<String, String> initRules = rulesStoreService.getAllRules();
 
@@ -105,11 +95,23 @@ public class PocAlertsService implements AlertsService {
         cepEngine.addGlobal("lAlerts", lAlerts);
         cepEngine.addGlobal("notificationsService", notificationsService);
 
-        cepTask.cancel();
         cepTask = new CepInvoker();
         wakeUpTimer.schedule(cepTask, DELAY, PERIOD);
+    }
 
-        notificationsService.reset();
+    @Override
+    public void clear() {
+        cepTask.cancel();
+
+        cepEngine.clear();
+
+        lEvents.clear();
+        lStates.clear();
+        lAlerts.clear();
+        processed.clear();
+
+        cepTask = new CepInvoker();
+        wakeUpTimer.schedule(cepTask, DELAY, PERIOD);
     }
 
     /**
@@ -117,25 +119,22 @@ public class PocAlertsService implements AlertsService {
      */
     public class CepInvoker extends TimerTask {
 
-        int lastIndex;
-
         public CepInvoker() {
-            lastIndex = 0;
         }
 
         @Override
         public void run() {
-            int newElements = lEvents.size() - lastIndex;
 
-            LOG.info("New events: " + newElements + " " + Thread.currentThread());
+            if (lEvents.size() > 0) {
+                for (int i=0; i<lEvents.size(); i++) {
+                    Event e = lEvents.get(i);
+                    LOG.info("Adding to CEP ... " + e);
+                    cepEngine.addFact(e);
+                    processed.add(e);
+                }
 
-            for ( int i = lastIndex; i < lEvents.size(); i++ ) {
-                Event e = lEvents.get(i);
-                LOG.info("Adding to CEP ... " + e);
-                cepEngine.addFact(e);
-            }
+                lEvents.clear();
 
-            if (newElements > 0) {
                 try {
                     cepEngine.fire();
                 } catch (Exception e) {
@@ -143,7 +142,6 @@ public class PocAlertsService implements AlertsService {
                 }
             }
 
-            lastIndex = lEvents.size();
         }
     }
 }

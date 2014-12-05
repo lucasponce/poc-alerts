@@ -6,11 +6,28 @@ package org.poc.api;
  */
 public interface NotificationsService {
 
-    void register(NotificationTask notification);
+    /**
+     * Register a new NotificationTask
+     */
+    void register(NotificationTask task);
 
+    /**
+     * Send a notification to the queue
+     */
     void notify(String id);
 
-    void finish();
+    /**
+     * Remove all NotificationTask previosly registered
+     */
+    void unregisterAll();
 
-    void reset();
+    /**
+     * Clear all pending notifications of the queue.
+     */
+    void clearPending();
+
+    /**
+     * Remove both NotificationsTasks and pending notifications.
+     */
+    void clearAll();
 }

@@ -17,5 +17,7 @@ public interface CepEngine {
 
     void fire();
 
+    void clear();
+
     void reset();
 }

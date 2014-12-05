@@ -1,5 +1,6 @@
 package org.poc.impl;
 
+import org.drools.core.marshalling.impl.ProtobufMessages;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -7,8 +8,7 @@ import org.kie.api.builder.KieRepository;
 import org.kie.api.builder.Message;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
-import org.kie.api.runtime.StatelessKieSession;
-import org.kie.internal.command.CommandFactory;
+import org.kie.api.runtime.rule.FactHandle;
 import org.poc.cep.CepEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +22,11 @@ public class PocCepEngine implements CepEngine {
     private static final Logger LOG = LoggerFactory.getLogger(PocCepEngine.class);
 
     private KieServices ks;
+
     private KieRepository kr;
     private KieFileSystem kfs;
     private KieBuilder kb;
+
     private KieContainer kc;
     private KieSession kSession;
 
@@ -40,6 +42,7 @@ public class PocCepEngine implements CepEngine {
 
     private void initKieArtifacts() {
         ks = KieServices.Factory.get();
+
         kr = ks.getRepository();
         kfs = ks.newKieFileSystem();
     }
@@ -147,8 +150,19 @@ public class PocCepEngine implements CepEngine {
     }
 
     @Override
+    public void clear() {
+        if (kSession != null) {
+            Collection<FactHandle> facts = kSession.getFactHandles();
+            for (FactHandle fact : facts) {
+                kSession.delete(fact);
+            }
+        }
+    }
+
+    @Override
     public void reset() {
         kfs = ks.newKieFileSystem();
+
         if (kSession != null) {
             kSession.dispose();
             kSession = null;

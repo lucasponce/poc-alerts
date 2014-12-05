@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class PocNotificationsService implements NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(PocNotificationsService.class);
 
-    private final Map<String, NotificationTask> notifications;
+    private final Map<String, NotificationTask> register;
     private final Queue<String> pending;
 
     public static final int DELAY = 1000;
@@ -28,7 +28,7 @@ public class PocNotificationsService implements NotificationsService {
     private TimerTask notificationsTask;
 
     public PocNotificationsService() {
-        notifications = new ConcurrentHashMap<String, NotificationTask>();
+        register = new ConcurrentHashMap<String, NotificationTask>();
         pending = new ConcurrentLinkedQueue<>();
 
         wakeUpTimer = new Timer("PocNotificationsService-Timer");
@@ -37,23 +37,23 @@ public class PocNotificationsService implements NotificationsService {
     }
 
     @Override
-    public void register(NotificationTask notification) {
-        LOG.info("Registering ... " + notification);
+    public void register(NotificationTask task) {
+        LOG.info("Registering ... " + task);
 
-        if (notification == null) {
-            throw new IllegalArgumentException("Notification must not be null");
+        if (task == null) {
+            throw new IllegalArgumentException("NotificationTask must not be null");
         }
 
-        String id = notification.getId();
-        if (notifications.containsKey(id)) {
-            throw new IllegalArgumentException("Notification " + id + " previously registered");
+        String id = task.getId();
+        if (register.containsKey(id)) {
+            throw new IllegalArgumentException("NotificationTask " + id + " previously registered");
         }
-        notifications.put(id, notification);
+        register.put(id, task);
     }
 
     @Override
     public void notify(String id) {
-        if (!notifications.containsKey(id)) {
+        if (!register.containsKey(id)) {
             LOG.warn("Notification [ " + id + " ] is not registered ! ...");
             return;
         }
@@ -62,20 +62,19 @@ public class PocNotificationsService implements NotificationsService {
     }
 
     @Override
-    public void finish() {
-        notificationsTask.cancel();
-        notifications.clear();
+    public void unregisterAll() {
+        register.clear();
+    }
+
+    @Override
+    public void clearPending() {
         pending.clear();
     }
 
     @Override
-    public void reset() {
-        notificationsTask.cancel();
-        notifications.clear();
-        pending.clear();
-
-        notificationsTask = new NotificationsInvoker();
-        wakeUpTimer.schedule(notificationsTask, DELAY, PERIOD);
+    public void clearAll() {
+        clearPending();
+        unregisterAll();
     }
 
     /**
@@ -89,7 +88,7 @@ public class PocNotificationsService implements NotificationsService {
             while (pending.size() > 0) {
                 String id = pending.poll();
                 try {
-                    notifications.get(id).run();
+                    register.get(id).run();
                 } catch (Exception e) {
                     LOG.error("Error invoking notification " + id, e);
                 }

@@ -2,10 +2,8 @@ package org.poc.tests;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.poc.api.AlertsFactory;
-import org.poc.api.AlertsService;
-import org.poc.api.Event;
-import org.poc.api.NotificationTask;
+import org.poc.ServiceFactory;
+import org.poc.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,26 +18,38 @@ public class AlertsServiceTest {
 
     @Test
     public void twoAlertTest() throws Exception {
-        AlertsService alertsService = AlertsFactory.getAlertsService();
-        alertsService.reset();
 
+        /*
+         * Create notifications to register into NotificationsService.
+         */
         SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
         SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
         EmailNotification emailAdmin = new EmailNotification("admin@email.com");
 
-        alertsService.register(snmpTrapJvm);
-        alertsService.register(snmpTrapCpu);
-        alertsService.register(emailAdmin);
+        NotificationsService notificationService = ServiceFactory.getNotificationsService();
 
+        notificationService.register(snmpTrapJvm);
+        notificationService.register(snmpTrapCpu);
+        notificationService.register(emailAdmin);
+
+        /**
+         * Dummy Events creations.
+         * These one will come from the messaging system / or API defined to receive events.
+         */
         Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
         Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
 
         Event normalCpu = new Event("CPU", 50d, System.currentTimeMillis());
         Event highCpu = new Event("CPU", 95d, System.currentTimeMillis());
 
+        /**
+         * Events can be received in batch, so a Collection is used here to simulate that scenario.
+         */
         Collection<Event> cpu = new ArrayList<>();
         cpu.add(normalCpu);
         cpu.add(highCpu);
+
+        AlertsService alertsService = ServiceFactory.getAlertsService();
 
         alertsService.sendEvent(normalJvm);
         alertsService.sendEvent(highJvm);
@@ -54,21 +64,21 @@ public class AlertsServiceTest {
         Assert.assertTrue(snmpTrapCpu.isNotified());
         Assert.assertTrue(emailAdmin.isNotified());
 
-        alertsService.finish();
+        notificationService.clearAll();
+        alertsService.clear();
     }
 
     @Test
-    public void moreEvents() throws Exception {
-        AlertsService alertsService = AlertsFactory.getAlertsService();
-        alertsService.reset();
-
+    public void cloneTest() throws Exception {
         SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
         SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
         EmailNotification emailAdmin = new EmailNotification("admin@email.com");
 
-        alertsService.register(snmpTrapJvm);
-        alertsService.register(snmpTrapCpu);
-        alertsService.register(emailAdmin);
+        NotificationsService notificationService = ServiceFactory.getNotificationsService();
+
+        notificationService.register(snmpTrapJvm);
+        notificationService.register(snmpTrapCpu);
+        notificationService.register(emailAdmin);
 
         Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
         Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
@@ -79,6 +89,8 @@ public class AlertsServiceTest {
         Collection<Event> cpu = new ArrayList<>();
         cpu.add(normalCpu);
         cpu.add(highCpu);
+
+        AlertsService alertsService = ServiceFactory.getAlertsService();
 
         alertsService.sendEvent(normalJvm);
         alertsService.sendEvent(highJvm);
@@ -93,8 +105,17 @@ public class AlertsServiceTest {
         Assert.assertTrue(snmpTrapCpu.isNotified());
         Assert.assertTrue(emailAdmin.isNotified());
 
-        alertsService.finish();
+        notificationService.clearAll();
+        alertsService.clear();
     }
+
+    public void addingRulesInDifferentTimeFrame() throws Exception {
+
+    }
+
+    /*
+        Samples of pluggable notification implementations
+     */
 
     public class SnmpNotification implements NotificationTask {
 
@@ -147,7 +168,5 @@ public class AlertsServiceTest {
             return notified;
         }
     }
-
-
 
 }
