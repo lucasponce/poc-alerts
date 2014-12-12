@@ -15,7 +15,7 @@ public class CepEngineTest {
 
         String dummyRule = "" +
                 "package org.poc.rules \n\n" +
-                "import org.poc.api.Event\n" +
+                "import org.poc.model.data.Event\n" +
                 "global java.io.PrintStream out \n\n" +
                 "rule \"Dummy\" \n" +
                 "when \n" +
