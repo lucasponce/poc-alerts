@@ -42,9 +42,9 @@ public class PocRulesStoreService implements RulesStoreService {
     }
 
     private void initDemoRules() {
-        addRule("JVM", DemoRules.RULE_JVM_MEM);
-        addRule("CPU", DemoRules.RULE_CPU);
-        addRule("CheckState", DemoRules.RULE_COMBINED);
+        addRule("Threshold", DemoRules.THRESHOLD);
+        addRule("AlertOneCondition", DemoRules.ALERT_ONE_CONDITION);
+        addRule("AlertTwoCondition", DemoRules.ALERT_TWO_CONDITION);
     }
 
     @Override
@@ -70,46 +70,70 @@ public class PocRulesStoreService implements RulesStoreService {
     public class DemoRules {
         public static final String NL              = "\n";
         public static final String PKG             = "package org.poc.rules" + NL + NL;
-        public static final String IMPORTS         = "import org.poc.api.Alert" + NL +
-                                                        "import org.poc.api.Event" + NL +
-                                                        "import org.poc.api.State" + NL + NL;
-        public static final String GLOBALS         = "global java.util.List lStates" + NL +
-                                                        "global java.util.List lAlerts" + NL +
+        public static final String IMPORTS         = "import org.poc.model.condition.Alert" + NL +
+                                                        "import org.poc.model.condition.ConditionMatch" + NL +
+                                                        "import org.poc.model.condition.ThresholdCondition" + NL +
+                                                        "import org.poc.model.data.Metric" + NL +
+                                                        "import org.poc.model.trigger.Trigger" + NL +
+                                                        "import org.poc.model.data.State" + NL + NL;
+
+        public static final String GLOBALS         = "global java.util.List states" + NL +
+                                                        "global java.util.List alerts" + NL +
                                                         "global org.poc.api.NotificationsService notificationsService" + NL + NL;
 
-        public static final String RULE_JVM_MEM    = PKG + IMPORTS + GLOBALS +
-                                                        "rule \"High JVM\"" + NL +
+
+        public static final String FUNCTIONS       = "import function org.poc.model.condition.ThresholdCondition.match" + NL + NL;
+
+
+        public static final String THRESHOLD       = PKG + IMPORTS + GLOBALS + FUNCTIONS +
+                                                        "rule \"Threshold\"" + NL +
                                                         "when" + NL +
-                                                        "$e : Event( id == \"JVM\", $value : value > 10 )" + NL +
+                                                        "$t  : Trigger( active == true, $tid : id )" + NL +
+                                                        "$tc : ThresholdCondition( triggerId == $tid, $mid : metricId, $th : threshold, $op : operator )" + NL +
+                                                        "$m  : Metric( $mid == id, $value : value )" + NL +
+                                                        "eval( match( $op, $th, $value ) )" + NL +
                                                         "then" + NL +
-                                                        "Alert alert = new Alert(\"JVM\", \"Mem value = \" + $value);" + NL +
-                                                        "lAlerts.add(alert);" + NL +
-                                                        "notificationsService.notify(\"SNMP-Trap-JVM\");" + NL +
-                                                        "insert(alert);" + NL +
+                                                        "String log = $tc.getLog( $value );" + NL +
+                                                        "ConditionMatch cm = new ConditionMatch( $tc, log );" + NL +
+                                                        "insert(cm);" + NL +
                                                         "end";
 
-        public static final String RULE_CPU        = PKG + IMPORTS + GLOBALS +
-                                                        "rule \"High CPU\"" + NL +
+        public static final String ALERT_ONE_CONDITION  = PKG + IMPORTS + GLOBALS + FUNCTIONS +
+                                                        "rule \"AlertOneCondition\"" + NL +
                                                         "when" + NL +
-                                                        "$e : Event( id == \"CPU\", $value : value > 90 )" + NL +
+                                                        "$t  : Trigger( active == true, $tid : id )" + NL +
+                                                        "$cm : ConditionMatch( triggerId == $tid, conditionSetSize == 1, conditionSetIndex == 1)" + NL +
                                                         "then" + NL +
-                                                        "Alert alert = new Alert(\"CPU\", \"CPU value = \" + $value);" + NL +
-                                                        "lAlerts.add(alert);" + NL +
-                                                        "notificationsService.notify(\"SNMP-Trap-CPU\");" + NL +
-                                                        "insert(alert);" + NL +
+                                                        "$t.setActive( false );" + NL +
+                                                        "Alert alert = new Alert( $tid );" + NL +
+                                                        "alert.addConditionMatch( $cm );" + NL +
+                                                        "for (String notifierId : $t.getNotifiers()) {" + NL +
+                                                        "notificationsService.notify( notifierId );" + NL +
+                                                        "}" + NL +
+                                                        "alerts.add( alert );" + NL +
+                                                        "insert( alert );" + NL +
+                                                        "update( $t );" + NL +
                                                         "end";
 
-        public static final String RULE_COMBINED   = PKG + IMPORTS + GLOBALS +
-                                                        "rule \"Bad State\"" + NL +
+        public static final String ALERT_TWO_CONDITION  = PKG + IMPORTS + GLOBALS + FUNCTIONS +
+                                                        "rule \"AlertTwoCondition\"" + NL +
                                                         "when" + NL +
-                                                        "$a1 : Alert( id == \"JVM\")" + NL +
-                                                        "$a2 : Alert( id == \"CPU\")" + NL +
+                                                        "$t  : Trigger( active == true, $tid : id )" + NL +
+                                                        "$cm1 : ConditionMatch( triggerId == $tid, conditionSetSize == 2, conditionSetIndex == 1)" + NL +
+                                                        "$cm2 : ConditionMatch( triggerId == $tid, conditionSetSize == 2, conditionSetIndex == 2)" + NL +
                                                         "then" + NL +
-                                                        "State state = new State(\"Bad State\", \"CPU  and JVM metrics under high load\");" + NL +
-                                                        "lStates.add(state);" + NL +
-                                                        "notificationsService.notify(\"admin@email.com\");" + NL +
-                                                        "insert(state);" + NL +
+                                                        "$t.setActive( false );" + NL +
+                                                        "Alert alert = new Alert( $tid );" + NL +
+                                                        "alert.addConditionMatch( $cm1 );" + NL +
+                                                        "alert.addConditionMatch( $cm2 );" + NL +
+                                                        "for (String notifierId : $t.getNotifiers()) {" + NL +
+                                                        "notificationsService.notify( notifierId );" + NL +
+                                                        "}" + NL +
+                                                        "alerts.add( alert );" + NL +
+                                                        "insert( alert );" + NL +
+                                                        "update( $t );" + NL +
                                                         "end";
+
     }
 
 

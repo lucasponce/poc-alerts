@@ -134,6 +134,29 @@ public class PocCepEngine implements CepEngine {
     }
 
     @Override
+    public void addFacts(Collection facts) {
+        if (!initSession()) return;
+
+        if (facts != null && !facts.isEmpty()) {
+            for (Object fact : facts) {
+                LOG.info("Adding fact " + fact + " ...");
+
+                kSession.insert(fact);
+            }
+        }
+    }
+
+    @Override
+    public void removeFact(Object fact) {
+        if (!initSession()) return;
+
+        FactHandle fh = kSession.getFactHandle(fact);
+        if (fh != null) {
+            kSession.delete(fh);
+        }
+    }
+
+    @Override
     public void fire() {
         if (!initSession()) return;
 

@@ -4,12 +4,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.poc.ServiceFactory;
 import org.poc.api.*;
-import org.poc.impl.PocRulesStoreService;
+import org.poc.model.condition.ThresholdCondition;
+import org.poc.model.condition.ThresholdCondition.Operator;
+import org.poc.model.data.Metric;
+import org.poc.model.trigger.Trigger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Basic tests for AlertsService
@@ -23,184 +27,76 @@ public class AlertsServiceTest {
         /*
          * Create notifications to register into NotificationsService.
          */
-        SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
-        SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
+        SnmpNotification snmpTrap1 = new SnmpNotification("SNMP-Trap-1");
+        SnmpNotification snmpTrap2 = new SnmpNotification("SNMP-Trap-2");
         EmailNotification emailAdmin = new EmailNotification("admin@email.com");
 
         NotificationsService notificationService = ServiceFactory.getNotificationsService();
 
-        notificationService.register(snmpTrapJvm);
-        notificationService.register(snmpTrapCpu);
+        notificationService.register(snmpTrap1);
+        notificationService.register(snmpTrap2);
         notificationService.register(emailAdmin);
 
-        /**
+        AlertsService alertsService = ServiceFactory.getAlertsService();
+
+        /*
+         * Create alert definitions in the form of Trigger and ThresholdCondition
+         */
+        Trigger t1 = new Trigger("trigger-1", "metric-01-low");
+        t1.addNotifier("SNMP-Trap-1");
+        ThresholdCondition cs1c1 = new ThresholdCondition("trigger-1", "Metric-01", 1, 1, Operator.LT, 5.0);
+
+        alertsService.addTrigger(t1);
+        alertsService.addThresholdCondition(cs1c1);
+
+        Trigger t2 = new Trigger("trigger-2", "metric-01-02-high");
+        t2.addNotifier("SNMP-Trap-1");
+        t2.addNotifier("SNMP-Trap-2");
+        t2.addNotifier("admin@email.com");
+        ThresholdCondition cs2c1 = new ThresholdCondition("trigger-2", "Metric-01", 2, 1, Operator.GTE, 15.0);
+        ThresholdCondition cs2c2 = new ThresholdCondition("trigger-2", "Metric-02", 2, 2, Operator.GTE, 15.0);
+
+        alertsService.addTrigger(t2);
+        alertsService.addThresholdCondition(cs2c1);
+        alertsService.addThresholdCondition(cs2c2);
+
+        /*
          * Dummy Events creations.
          * These one will come from the messaging system / or API defined to receive events.
          */
-        Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
-        Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
+        List<Metric> batch = new ArrayList<>();
 
-        Event normalCpu = new Event("CPU", 50d, System.currentTimeMillis());
-        Event highCpu = new Event("CPU", 95d, System.currentTimeMillis());
+        Metric normalMetric01 = new Metric("Metric-01", System.currentTimeMillis(), 10d);
+        Metric lowMetric01 = new Metric("Metric-01", System.currentTimeMillis(), 4.3d);
+        Metric highMetric01 = new Metric("Metric-01", System.currentTimeMillis(), 24.3d);
 
-        /**
-         * Events can be received in batch, so a Collection is used here to simulate that scenario.
-         */
-        Collection<Event> cpu = new ArrayList<>();
-        cpu.add(normalCpu);
-        cpu.add(highCpu);
+        batch.add(normalMetric01);
+        batch.add(lowMetric01);
+        batch.add(highMetric01);
 
-        AlertsService alertsService = ServiceFactory.getAlertsService();
+        Metric normalMetric02 = new Metric("Metric-02", System.currentTimeMillis(), 10d);
+        Metric lowMetric02 = new Metric("Metric-02", System.currentTimeMillis(), 4.3d);
+        Metric highMetric02 = new Metric("Metric-02", System.currentTimeMillis(), 24.3d);
 
-        alertsService.sendEvent(normalJvm);
-        alertsService.sendEvent(highJvm);
-        alertsService.sendBatch(cpu);
+        batch.add(normalMetric02);
+        batch.add(lowMetric02);
+        batch.add(highMetric02);
+
+        alertsService.sendMetrics(batch);
 
         Thread.sleep(4000);
 
         Assert.assertEquals(2, alertsService.checkAlert().size());
-        Assert.assertEquals(1, alertsService.checkState().size());
 
-        Assert.assertTrue(snmpTrapJvm.isNotified());
-        Assert.assertTrue(snmpTrapCpu.isNotified());
+        Assert.assertTrue(snmpTrap1.isNotified());
+        Assert.assertTrue(snmpTrap2.isNotified());
         Assert.assertTrue(emailAdmin.isNotified());
 
         notificationService.clearAll();
         alertsService.clear();
     }
 
-    @Test
-    public void cloneTest() throws Exception {
-        SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
-        SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
-        EmailNotification emailAdmin = new EmailNotification("admin@email.com");
 
-        NotificationsService notificationService = ServiceFactory.getNotificationsService();
-
-        notificationService.register(snmpTrapJvm);
-        notificationService.register(snmpTrapCpu);
-        notificationService.register(emailAdmin);
-
-        Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
-        Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
-
-        Event normalCpu = new Event("CPU", 50d, System.currentTimeMillis());
-        Event highCpu = new Event("CPU", 95d, System.currentTimeMillis());
-
-        Collection<Event> cpu = new ArrayList<>();
-        cpu.add(normalCpu);
-        cpu.add(highCpu);
-
-        AlertsService alertsService = ServiceFactory.getAlertsService();
-
-        alertsService.sendEvent(normalJvm);
-        alertsService.sendEvent(highJvm);
-        alertsService.sendBatch(cpu);
-
-        Thread.sleep(4000);
-
-        Assert.assertEquals(2, alertsService.checkAlert().size());
-        Assert.assertEquals(1, alertsService.checkState().size());
-
-        Assert.assertTrue(snmpTrapJvm.isNotified());
-        Assert.assertTrue(snmpTrapCpu.isNotified());
-        Assert.assertTrue(emailAdmin.isNotified());
-
-        notificationService.clearAll();
-        alertsService.clear();
-    }
-
-    @Test
-    public void addingRulesInDifferentTimeFrame() throws Exception {
-        SnmpNotification snmpTrapJvm = new SnmpNotification("SNMP-Trap-JVM");
-        SnmpNotification snmpTrapCpu = new SnmpNotification("SNMP-Trap-CPU");
-        EmailNotification emailAdmin = new EmailNotification("admin@email.com");
-
-        NotificationsService notificationService = ServiceFactory.getNotificationsService();
-
-        notificationService.register(snmpTrapJvm);
-        notificationService.register(snmpTrapCpu);
-        notificationService.register(emailAdmin);
-
-        Event normalJvm = new Event("JVM", 5d, System.currentTimeMillis());
-        Event highJvm = new Event("JVM", 12d, System.currentTimeMillis());
-
-        Event normalCpu = new Event("CPU", 50d, System.currentTimeMillis());
-        Event highCpu = new Event("CPU", 95d, System.currentTimeMillis());
-
-        Collection<Event> cpu = new ArrayList<>();
-        cpu.add(normalCpu);
-        cpu.add(highCpu);
-
-        /**
-         * We clear the rules from the RulesStoreService
-         */
-        RulesStoreService rulesStoreService = ServiceFactory.getRulesStoreService();
-        rulesStoreService.clear();
-
-        AlertsService alertsService = ServiceFactory.getAlertsService();
-
-        /**
-         * No rules.
-         */
-        alertsService.reloadRules();
-
-        /**
-         * Only JVM Rule
-         */
-        rulesStoreService.addRule("JVM", PocRulesStoreService.DemoRules.RULE_JVM_MEM);
-        alertsService.reloadRules();
-
-        alertsService.sendEvent(normalJvm);
-        alertsService.sendEvent(highJvm);
-        alertsService.sendBatch(cpu);
-
-        Thread.sleep(4000);
-
-        /**
-         * We will have 1 Alert trigged from JVM rule
-         */
-        Assert.assertEquals(1, alertsService.checkAlert().size());
-
-        /*
-         * JVM and CPU Rules
-         */
-        rulesStoreService.addRule("CPU", PocRulesStoreService.DemoRules.RULE_CPU);
-        alertsService.reloadRules();
-
-        alertsService.sendEvent(normalJvm);
-        alertsService.sendEvent(highJvm);
-        alertsService.sendBatch(cpu);
-
-        Thread.sleep(4000);
-
-        /**
-         * We will have 2 new Alerts + 1 previous Alert as we didn't clear the state.
-         */
-        Assert.assertEquals(3, alertsService.checkAlert().size());
-
-        /*
-         * Combined Rule
-         */
-        rulesStoreService.addRule("CheckState", PocRulesStoreService.DemoRules.RULE_COMBINED);
-        alertsService.reloadRules();
-
-        alertsService.sendEvent(normalJvm);
-        alertsService.sendEvent(highJvm);
-        alertsService.sendBatch(cpu);
-
-        Thread.sleep(4000);
-
-        /**
-         * We will have 2 new Alerts + 3 previous Alerts as we didn't clear the state.
-         */
-        Assert.assertEquals(5, alertsService.checkAlert().size());
-        Assert.assertEquals(1, alertsService.checkState().size());
-
-        rulesStoreService.reset();
-        notificationService.clearAll();
-        alertsService.clear();
-    }
 
     /*
         Samples of pluggable notification implementations

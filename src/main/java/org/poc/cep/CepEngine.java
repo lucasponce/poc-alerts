@@ -15,6 +15,10 @@ public interface CepEngine {
 
     void addFact(Object fact);
 
+    void addFacts(Collection facts);
+
+    void removeFact(Object fact);
+
     void fire();
 
     void clear();

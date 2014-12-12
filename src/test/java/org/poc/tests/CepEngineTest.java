@@ -1,9 +1,9 @@
 package org.poc.tests;
 
 import org.junit.Test;
-import org.poc.api.Event;
 import org.poc.cep.CepEngine;
 import org.poc.cep.CepEngineFactory;
+import org.poc.model.data.Event;
 
 /**
  * Basic tests for CepEngine
@@ -27,10 +27,10 @@ public class CepEngineTest {
         CepEngine cepEngine = CepEngineFactory.getCepEngine();
         cepEngine.addRule("dummy", dummyRule);
         cepEngine.addGlobal("out", System.out);
-        cepEngine.addFact( new Event("1", 0d, System.currentTimeMillis()) );
+        cepEngine.addFact( new Event("1", System.currentTimeMillis()) );
         cepEngine.fire();
 
-        cepEngine.addFact( new Event("2", 0d, System.currentTimeMillis()) );
+        cepEngine.addFact( new Event("2", System.currentTimeMillis()) );
         cepEngine.fire();
 
         cepEngine.removeRule("dummy");
