@@ -19,6 +19,8 @@ public interface AlertsService {
     void addTrigger(Trigger trigger);
     void addTriggers(Collection<Trigger> triggers);
     void removeTrigger(String id);
+    Trigger getTrigger(String id);
+    void updateTrigger(String id, Trigger trigger);
 
     void addThresholdCondition(ThresholdCondition thresholdCondition);
     void addThresholdConditions(Collection<ThresholdCondition> thresholdConditions);

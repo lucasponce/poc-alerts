@@ -122,6 +122,46 @@ public class PocAlertsService implements AlertsService {
     }
 
     @Override
+    public Trigger getTrigger(String id) {
+        LOG.info("TODO");
+        int found = -1;
+        Trigger t = null;
+        for (int i=0; i<triggers.size(); i++) {
+            t = triggers.get(i);
+            if (t.getId().equals(id)) {
+                found = i;
+                break;
+            }
+        }
+        if (found != -1) {
+            return t;
+        } else {
+            return null;
+        }
+    }
+
+    /*
+     * This implementation is very not efficient.
+     * We should modify facts using fact handles.
+     * In the other side, in this stage of the PoC I wanted to not introduce specific drools.* classes in the CepEngine interface.
+     * So, we should be able to map "FactHandle" concept perhaps with id for specific facts as Triggers or others.
+     */
+    @Override
+    public void updateTrigger(String id, Trigger trigger) {
+        if (id == null) {
+            throw new IllegalArgumentException("Trigger id must be not null");
+        }
+        if (trigger == null || trigger.getId() == null) {
+            throw new IllegalArgumentException("Trigger must be not-null");
+        }
+        if (!trigger.getId().equals(id)) {
+            throw new IllegalArgumentException("Trigger id and updated trigger must be equal");
+        }
+        removeTrigger(id);
+        addTrigger(trigger);
+    }
+
+    @Override
     public void addThresholdCondition(ThresholdCondition thresholdCondition) {
         if (thresholdCondition == null) {
             throw new IllegalArgumentException("ThresholdCondition must be non null");
