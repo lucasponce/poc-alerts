@@ -123,7 +123,6 @@ public class PocAlertsService implements AlertsService {
 
     @Override
     public Trigger getTrigger(String id) {
-        LOG.info("TODO");
         int found = -1;
         Trigger t = null;
         for (int i=0; i<triggers.size(); i++) {
