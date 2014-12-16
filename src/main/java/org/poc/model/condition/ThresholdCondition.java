@@ -52,7 +52,8 @@ public class ThresholdCondition extends Condition {
         final StringBuilder sb = new StringBuilder();
         sb.append(triggerId).append(": ").append(" ");
         sb.append(getOperator().name()).append(" ");
-        sb.append(threshold);
+        sb.append(threshold).append(" ");
+        sb.append('{').append(value).append('}');
         return sb.toString();
     }
 

@@ -7,4 +7,6 @@ public interface NotificationTask extends Runnable {
 
     String getId();
 
+    void setMessage(String msg);
+
 }

@@ -10,10 +10,12 @@ public class Alert {
 
     private String triggerId;
     private Set<ConditionMatch> matches;
+    private long time;
 
     public Alert(String triggerId) {
         this.triggerId = triggerId;
         this.matches = new HashSet<>();
+        this.time = System.currentTimeMillis();
     }
 
     public String getTriggerId() {
@@ -30,6 +32,14 @@ public class Alert {
 
     public void setMatches(Set<ConditionMatch> matches) {
         this.matches = matches;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time = time;
     }
 
     public void addConditionMatch(ConditionMatch conditionMatch) {

@@ -19,7 +19,7 @@ public class PocNotificationsService implements NotificationsService {
     private static final Logger LOG = LoggerFactory.getLogger(PocNotificationsService.class);
 
     private final Map<String, NotificationTask> register;
-    private final Queue<String> pending;
+    private final Queue<NotificationMessage> pending;
 
     public static final int DELAY = 1000;
     public static final int PERIOD = 2000;
@@ -52,13 +52,16 @@ public class PocNotificationsService implements NotificationsService {
     }
 
     @Override
-    public void notify(String id) {
+    public void notify(String id, String msg) {
         if (!register.containsKey(id)) {
             LOG.warn("Notification [ " + id + " ] is not registered ! ...");
             return;
         }
         LOG.info("Notification [ " + id + " ] sent to the queue");
-        pending.add(id);
+        NotificationMessage notificationMessage = new NotificationMessage();
+        notificationMessage.id = id;
+        notificationMessage.msg = msg;
+        pending.add(notificationMessage);
     }
 
     @Override
@@ -86,14 +89,26 @@ public class PocNotificationsService implements NotificationsService {
         public void run() {
 
             while (pending.size() > 0) {
-                String id = pending.poll();
+                NotificationMessage notificationMessage = pending.poll();
+                String id = notificationMessage.id;
+                String msg = notificationMessage.msg;
                 try {
-                    register.get(id).run();
+                    NotificationTask notificationTask = register.get(id);
+                    notificationTask.setMessage(msg);
+                    notificationTask.run();
                 } catch (Exception e) {
                     LOG.error("Error invoking notification " + id, e);
                 }
             }
 
         }
+    }
+
+    /**
+     * A helper class to enqueue notifications messages
+     */
+    public class NotificationMessage {
+        public String id;
+        public String msg;
     }
 }

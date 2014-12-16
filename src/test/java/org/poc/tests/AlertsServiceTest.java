@@ -105,12 +105,14 @@ public class AlertsServiceTest {
         SnmpNotification snmpTrap1 = new SnmpNotification("SNMP-Trap-1");
         SnmpNotification snmpTrap2 = new SnmpNotification("SNMP-Trap-2");
         EmailNotification emailAdmin = new EmailNotification("admin@email.com");
+        EmailNotification emailAll = new EmailNotification("all@email.com");
 
         NotificationsService notificationService = ServiceFactory.getNotificationsService();
 
         notificationService.register(snmpTrap1);
         notificationService.register(snmpTrap2);
         notificationService.register(emailAdmin);
+        notificationService.register(emailAll);
 
         AlertsService alertsService = ServiceFactory.getAlertsService();
 
@@ -166,6 +168,9 @@ public class AlertsServiceTest {
             Thread.sleep(50);
         }
 
+        Assert.assertTrue(alertsService.checkAlert().size() > 0);
+        Assert.assertTrue(alertsService.checkState().size() > 0);
+
         notificationService.clearAll();
         alertsService.clear();
     }
@@ -180,6 +185,7 @@ public class AlertsServiceTest {
 
         private String id;
         private boolean notified;
+        private String msg;
 
         public SnmpNotification(String id) {
             this.id = id;
@@ -192,8 +198,13 @@ public class AlertsServiceTest {
         }
 
         @Override
+        public void setMessage(String msg) {
+            this.msg = msg;
+        }
+
+        @Override
         public void run() {
-            LOG.info("=== [ " + id + " ] sent ===");
+            LOG.info("=== SNMP [ " + id + " ] sent { " + msg + " } === ");
             notified = true;
         }
 
@@ -206,6 +217,7 @@ public class AlertsServiceTest {
 
         private String email;
         private boolean notified;
+        private String msg;
 
         public EmailNotification(String email) {
             this.email = email;
@@ -218,8 +230,13 @@ public class AlertsServiceTest {
         }
 
         @Override
+        public void setMessage(String msg) {
+            this.msg = msg;
+        }
+
+        @Override
         public void run() {
-            LOG.info("=== [ " + email + " ] sent ===");
+            LOG.info("=== EMAIL [ " + email + " ] sent { " + msg + " } ===");
             notified = true;
         }
 

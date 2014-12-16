@@ -14,7 +14,7 @@ public interface NotificationsService {
     /**
      * Send a notification to the queue
      */
-    void notify(String id);
+    void notify(String id, String msg);
 
     /**
      * Remove all NotificationTask previosly registered

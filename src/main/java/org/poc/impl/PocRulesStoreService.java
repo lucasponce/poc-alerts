@@ -45,6 +45,7 @@ public class PocRulesStoreService implements RulesStoreService {
         addRule("Threshold", DemoRules.THRESHOLD);
         addRule("AlertOneCondition", DemoRules.ALERT_ONE_CONDITION);
         addRule("AlertTwoCondition", DemoRules.ALERT_TWO_CONDITION);
+        addRule("TwoAlertsTenSeconds", DemoRules.TWO_ALERTS_10_SECS);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class PocRulesStoreService implements RulesStoreService {
                                                         "Alert alert = new Alert( $tid );" + NL +
                                                         "alert.addConditionMatch( $cm );" + NL +
                                                         "for (String notifierId : $t.getNotifiers()) {" + NL +
-                                                        "notificationsService.notify( notifierId );" + NL +
+                                                        "notificationsService.notify( notifierId, $cm.getLog() );" + NL +
                                                         "}" + NL +
                                                         "alerts.add( alert );" + NL +
                                                         "insert( alert );" + NL +
@@ -127,11 +128,24 @@ public class PocRulesStoreService implements RulesStoreService {
                                                         "alert.addConditionMatch( $cm1 );" + NL +
                                                         "alert.addConditionMatch( $cm2 );" + NL +
                                                         "for (String notifierId : $t.getNotifiers()) {" + NL +
-                                                        "notificationsService.notify( notifierId );" + NL +
+                                                        "notificationsService.notify( notifierId, $cm1.getLog() + \" AND \" + $cm2.getLog() );" + NL +
                                                         "}" + NL +
                                                         "alerts.add( alert );" + NL +
                                                         "insert( alert );" + NL +
                                                         "update( $t );" + NL +
+                                                        "end";
+
+        public static final String TWO_ALERTS_10_SECS   = PKG + IMPORTS + GLOBALS + FUNCTIONS +
+                                                        "rule \"TwoAlertsTenSeconds\"" + NL +
+                                                        "when" + NL +
+                                                        "$a1  : Alert( $tid1 : triggerId, $time1 : time )" + NL +
+                                                        "$a2  : Alert( triggerId == $tid1, $time2 : time != $time1 && ( Math.abs($time1 - time) < 10 * 1000) )" + NL +
+                                                        "then" + NL +
+                                                        "notificationsService.notify(\"all@email.com\", \"Severe !! 2 alerts within 10 seconds !! \");" + NL +
+                                                        "retract( $a1 );" + NL +
+                                                        "retract( $a2 ); " + NL +
+                                                        "State severeTwoAlerts = new State(\"\", System.currentTimeMillis(), \"SEVERE - 2 alerts within 10 seconds\");" + NL +
+                                                        "states.add(severeTwoAlerts);" + NL +
                                                         "end";
 
     }
